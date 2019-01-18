@@ -1,15 +1,24 @@
 let searchButton = document.getElementById('searchButton');
 
 searchButton.addEventListener('click', () => {
-    relatedObjects = new Array();   // clear the previous search
+    search();
+});
 
-    if (document.getElementById('textField').value.trim() == "") {
-        return;
+// for "x" clear button that clear the text at input, the list of results should also be cleared. 
+$("#searchclear").click(function(){
+    $("#textField").val('');
+    document.getElementById('resultList').innerHTML = "";
+}); 
+
+$('#textField').keyup(function(e) {
+    var keycode = e.keyCode || e.which;
+    console.log(keycode);
+    if(keycode == '13') {
+        search();
+    } else if ((keycode == '8' || keycode == '46') 
+    && (document.getElementById('textField').value.trim() == "") ) {
+        document.getElementById('resultList').innerHTML = "";
     }
-    searchObject(document.getElementById('textField').value);
-    console.log(relatedObjects);    // debug
-    document.getElementById('resultList').innerHTML = insertResults();
-    addEventListeners();
 });
 
 var allObjects = new Array();
@@ -78,6 +87,18 @@ function restoreText(text) {
     var txt = document.createElement("textarea");
     txt.innerHTML = text.replace(/\//g, "/");
     return txt.value;
+}
+
+function search() {
+    relatedObjects = new Array();   // clear the previous search
+
+    if (document.getElementById('textField').value.trim() == "") {
+        return;
+    }
+    searchObject(document.getElementById('textField').value);
+    console.log(relatedObjects);    // debug
+    document.getElementById('resultList').innerHTML = insertResults();
+    addEventListeners();
 }
 
 loadObjects();
