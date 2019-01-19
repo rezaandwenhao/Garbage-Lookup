@@ -1,3 +1,7 @@
+var allObjects = new Array();
+var relatedObjects = new Array();
+var clickMap = new Map();
+var currentTitle = "";
 let searchButton = document.getElementById('searchButton');
 
 searchButton.addEventListener('click', () => {
@@ -12,7 +16,6 @@ $("#searchclear").click(function(){
 
 $('#textField').keyup(function(e) {
     var keycode = e.keyCode || e.which;
-    console.log(keycode);
     if(keycode == '13') {
         search();
     } else if ((keycode == '8' || keycode == '46') 
@@ -21,25 +24,30 @@ $('#textField').keyup(function(e) {
     }
 });
 
-var allObjects = new Array();
-var relatedObjects = new Array();
-var clickMap = new Map();
-var currentTitle = "";
+loadObjects();
 
-function createMap() {
-    for (i = 0; i < allObjects.length; i++) {
-        clickMap.set(allObjects[i].title, "buttonGrey");
-    }
-    console.log(clickMap);
+function initLocalStorage() {
+        if (typeof(Storage) !== "undefined") {
+        // restore the localStorage, if storage is empty, will init new one
+            for (i = 0; i < allObjects.length; i++) {
+                if (getItem(clickMap, allObjects[i].title) != "buttonGreen") {
+                    setItem(clickMap, allObjects[i].title, "buttonGrey");
+                }
+            }
+        } else {
+            for (i = 0; i < allObjects.length; i++) {
+                setItem(clickMap, allObjects[i].title, "buttonGrey");
+            }
+        }
 }
 
 function addEventListeners() {
     for (i = 0; i < relatedObjects.length; i++) {
             document.getElementById(relatedObjects[i].title)
             .addEventListener('click', (e) => {
-                clickMap.set(e.target.id, "buttonGreen");
+                setItem(clickMap, e.target.id, "buttonGreen");
                 e.target.outerHTML = 
-                "<span class=\"glyphicon glyphicon-star " + clickMap.get(e.target.id) 
+                "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, e.target.id) 
                 + " id=\""+ e.target.id +"\"" + " aria-hidden=\"true\"></span>";
             });
     }
@@ -53,16 +61,16 @@ function loadObjects() {
     })
     .done(function() {
         console.log( "JSON loaded!" );  // debug
-        createMap();
+        initLocalStorage();
     });
 
 }
 
 function searchObject(text) {
     for (i = 0; i < allObjects.length; i++) {
-        if (allObjects[i].title.includes(text)) {
+        if (allObjects[i].title.toLowerCase().includes(text)) {
             relatedObjects.push(allObjects[i]);
-        } else if (allObjects[i].keywords.includes(text)) {
+        } else if (allObjects[i].keywords.toLowerCase().includes(text)) {
             relatedObjects.push(allObjects[i]);
         }
     }
@@ -73,7 +81,7 @@ function insertResults() {
     for(n=0;n<relatedObjects.length;n++){
         res = res + "<div class=\"column1\">" 
         + "<button type=\"button\" class=\"button\">"
-        + "<span class=\"glyphicon glyphicon-star " + clickMap.get(relatedObjects[n].title) 
+        + "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, relatedObjects[n].title) 
         + "\"" + " id=\""+ relatedObjects[n].title +"\"" + " aria-hidden=\"true\"></span>"
         + "</button>"
         + relatedObjects[n].title + "</div>";
@@ -95,10 +103,29 @@ function search() {
     if (document.getElementById('textField').value.trim() == "") {
         return;
     }
-    searchObject(document.getElementById('textField').value);
-    console.log(relatedObjects);    // debug
+    searchObject(document.getElementById('textField').value.toLowerCase());
     document.getElementById('resultList').innerHTML = insertResults();
     addEventListeners();
 }
 
-loadObjects();
+function setItem(map, key, value) {
+    if (typeof(Storage) !== "undefined") {
+        // Code for localStorage
+        window.localStorage.setItem(key, value);
+    } else {
+        // No web storage Support.
+        map.setItem(key, value);
+    }
+}
+
+function getItem(map, key) {
+    if (typeof(Storage) !== "undefined") {
+        // Code for localStorage
+        return window.localStorage.getItem(key);
+    } else {
+        // No web storage Support.
+        return map.getItem(key);
+    }
+}
+
+
