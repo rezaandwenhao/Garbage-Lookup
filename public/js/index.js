@@ -1,5 +1,6 @@
 var allObjects = new Array();
 var relatedObjects = new Array();
+var favouriteIds = new Array();
 var clickMap = new Map();
 var currentTitle = "";
 let searchButton = document.getElementById('searchButton');
@@ -12,8 +13,10 @@ searchButton.addEventListener('click', () => {
 $("#searchclear").click(function(){
     $("#textField").val('');
     document.getElementById('resultList').innerHTML = "";
+    relatedObjects = new Array();  //empty the relatedObjects
 }); 
 
+// when using backspace or delete key to clear the text at input, the list of results should also be cleared. 
 $('#textField').keyup(function(e) {
     var keycode = e.keyCode || e.which;
     if(keycode == '13') {
@@ -21,6 +24,7 @@ $('#textField').keyup(function(e) {
     } else if ((keycode == '8' || keycode == '46') 
     && (document.getElementById('textField').value.trim() == "") ) {
         document.getElementById('resultList').innerHTML = "";
+        relatedObjects = new Array();  //empty the relatedObjects
     }
 });
 
@@ -48,9 +52,33 @@ function addEventListeners() {
                 setItem(clickMap, e.target.id, "buttonGreen");
                 e.target.outerHTML = 
                 "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, e.target.id) 
-                + " id=\""+ e.target.id +"\"" + " aria-hidden=\"true\"></span>";
+                + "\"" + " id=\""+ e.target.id +"\"" + " aria-hidden=\"true\"></span>";
+                document.getElementById("favourites").innerHTML = insertFavourites();
+                console.log(favouriteIds);
+                addEventListeners2(); //re-enable the button in the favourite list
             });
     }
+}
+
+var tet = "";
+
+function addEventListeners2() {
+    for (i = 0; i < favouriteIds.length; i++) {
+        document.getElementById(favouriteIds[i] + " Fav")
+        .addEventListener('click', (e) => {
+            setItem(clickMap, e.target.id.slice(0, -4), "buttonGrey");
+            // remove the item from favourites list
+            document.getElementById("favourites").innerHTML = insertFavourites();
+            // turn to grey star in the results list
+            if (relatedObjects.length != 0) {
+                document.getElementById(e.target.id.slice(0, -4)).outerHTML = 
+                "<span class=\"glyphicon glyphicon-star buttonGrey\""
+                + " id=\""+ e.target.id.slice(0, -4) +"\"" + " aria-hidden=\"true\"></span>";
+                addEventListeners();
+            }
+            addEventListeners2(); //re-enable the button in the favourite list
+        });
+}
 }
     
 function loadObjects() {
@@ -62,6 +90,10 @@ function loadObjects() {
     .done(function() {
         console.log( "JSON loaded!" );  // debug
         initLocalStorage();
+        $(document).ready(function () {
+            document.getElementById("favourites").innerHTML = insertFavourites();
+        });
+        addEventListeners2();
     });
 
 }
@@ -86,6 +118,29 @@ function insertResults() {
         + "</button>"
         + relatedObjects[n].title + "</div>";
         res = res + "<div class=\"column2\">" + restoreText(relatedObjects[n].body) + "</div>";
+    }
+    return res;
+}
+
+function insertFavourites () {
+    favouriteIds = new Array();
+    var res = "";
+    for (i = 0; i < window.localStorage.length; i++){
+        if (window.localStorage.getItem(window.localStorage.key(i)) == "buttonGreen") {
+            res = res + "<div class=\"column1\">" 
+            + "<button type=\"button\" class=\"button\">"
+            + "<span class=\"glyphicon glyphicon-star " +  "buttonGreen"
+            + "\"" + " id=\""+ window.localStorage.key(i) +" Fav\"" + " aria-hidden=\"true\"></span>"
+            + "</button>"
+            + window.localStorage.key(i) + "</div>";
+            // loop to find out the body according to favourite's title
+            for (j = 0; j < allObjects.length; j++) {
+                if (allObjects[j].title == window.localStorage.key(i)) {
+                    res = res + "<div class=\"column2\">" + restoreText(allObjects[j].body) + "</div>";
+                }
+            }
+            favouriteIds.push(window.localStorage.key(i));
+        }
     }
     return res;
 }

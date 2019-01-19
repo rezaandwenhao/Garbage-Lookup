@@ -48,6 +48,10 @@ header {
     color: #ccc;
 }
 
+#resultList {
+    margin-bottom: 200px;
+ }
+
 .column1 {
     float: left;
     width: 50%;
@@ -81,8 +85,23 @@ header {
 }
 
 .button {
-    background-color: white;
+    background-color: transparent;
     border: none;
     padding-left: 15px;
     padding-right: 10px;
+}
+
+.footer {
+    height:25%; 
+    width: 100%;
+    background-color: #CFFAEB;
+    overflow-y: scroll;
+    background-position: 0% 0%;
+    position: fixed;
+    bottom: 0pt;
+    left: 0pt;
+}   
+
+.footer_contents {
+    padding-left: 15px;
 }
