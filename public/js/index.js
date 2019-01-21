@@ -1,8 +1,7 @@
-var allObjects = new Array();
-var relatedObjects = new Array();
-var favouriteIds = new Array();
-var clickMap = new Map();
-var currentTitle = "";
+var allObjects = new Array();   //all the objects from JSON file
+var relatedObjects = new Array();   //related objects after keyword searching
+var favouriteIds = new Array(); //the id of the object that is in fav list
+var clickMap = new Map();   //when local storage not available, store the button color
 let searchButton = document.getElementById('searchButton');
 
 loadObjects();  // load data from JSON file
@@ -11,37 +10,44 @@ searchButton.addEventListener('click', () => {
     search();
 });
 
-// for "x" clear button that clear the text at input, the list of results should also be cleared. 
+/* for "x" clear button that clear the text at input, 
+the list of results should also be cleared. */
 $("#searchclear").click(function () {
     $("#textField").val('');
     document.getElementById('resultList').innerHTML = "";
     relatedObjects = new Array();  //empty the relatedObjects
 });
 
-// when using backspace or delete key to clear the text at input, the list of results should also be cleared. 
 $('#textField').keyup(function (e) {
     var keycode = e.keyCode || e.which;
     if (keycode == '13') {
-        search();
+        search();   // click "enter" to search
     } else if ((keycode == '8' || keycode == '46')
         && (document.getElementById('textField').value.trim() == "")) {
+        /* when using backspace or delete key to clear the text at input, 
+        the list of results should also be cleared. */
         document.getElementById('resultList').innerHTML = "";
         relatedObjects = new Array();  //empty the relatedObjects
     }
 });
 
+/** 
+ * Initialize the local storage. 
+ * If the local storage is not available for the browser,
+ * initialize an all "buttonGrey" clickMap
+*/
 function initLocalStorage() {
     if (typeof (Storage) !== "undefined") {
         // restore the localStorage, if storage is empty, will init new one
-        for (i = 0; i < allObjects.length; i++) {
-            if (getItem(clickMap, allObjects[i].title) != "buttonGreen") {
-                setItem(clickMap, allObjects[i].title, "buttonGrey");
+        allObjects.forEach((item) => {
+            if (getItem(clickMap, item.title) != "buttonGreen") {
+                setItem(clickMap, item.title, "buttonGrey");
             }
-        }
+        })
     } else {
-        for (i = 0; i < allObjects.length; i++) {
-            setItem(clickMap, allObjects[i].title, "buttonGrey");
-        }
+        allObjects.forEach((item) => {
+            setItem(clickMap, item.title, "buttonGrey");
+        })
     }
 }
 
@@ -51,14 +57,14 @@ function initLocalStorage() {
 */
 function addEventListenerToId(id) {
     document.getElementById(id)
-    .addEventListener('click', (e) => {
-        setItem(clickMap, e.target.id, "buttonGreen");
-        e.target.outerHTML =
-            "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, e.target.id)
-            + "\"" + " id=\"" + e.target.id + "\"" + " aria-hidden=\"true\"></span>";
-        document.getElementById("favourites").innerHTML = insertFavourites();
-        addEventListeners2(); //re-enable the button in the favourite list
-    });
+        .addEventListener('click', (e) => {
+            setItem(clickMap, e.target.id, "buttonGreen");
+            e.target.outerHTML =
+                "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, e.target.id)
+                + "\"" + " id=\"" + e.target.id + "\"" + " aria-hidden=\"true\"></span>";
+            document.getElementById("favourites").innerHTML = insertFavourites(); // update the fav list
+            addEventListenersToFav(); //re-enable the button in the favourite list
+        });
 }
 
 /** 
@@ -67,65 +73,81 @@ function addEventListenerToId(id) {
  * So it can be clicked again to add to fav list
  * @param {string} id - the id of the button that is to be added a listener
 */
-function addEventListenerToResults(id) {
-    relatedObjects.forEach((item) => {
-        if (item.title === id) {
-            addEventListenerToId(id);
-        }
+// function addEventListenerToResults(id) {
+//     relatedObjects.forEach((item) => {
+//         if (item.title === id) {
+//             addEventListenerToId(id);
+//         }
+//     })
+// }
+
+/** 
+ * Add an event listeners to the item buttons in the fav list
+*/
+function addEventListenersToFav() {
+    favouriteIds.forEach((item) => {
+        // get the button in the fav list, not in the results list
+        document.getElementById(item + " Fav")
+            .addEventListener('click', (e) => {
+                var originalId = e.target.id.slice(0, -4);
+                setItem(clickMap, originalId, "buttonGrey");
+                // remove the item from favourites list
+                document.getElementById("favourites").innerHTML = insertFavourites();
+                /* When remove item A from fav list, 
+                * add a listener to the A star that becomes grey if it's in the result list.
+                * So it can be clicked again to add to fav list*/
+                relatedObjects.forEach((item) => {
+                    if (item.title === originalId) {
+                        document.getElementById(originalId).outerHTML =
+                            "<span class=\"glyphicon glyphicon-star buttonGrey\""
+                            + " id=\"" + originalId + "\"" + " aria-hidden=\"true\"></span>";
+                        addEventListenerToId(originalId);
+                    }
+                })
+                addEventListenersToFav(); //re-enable the button in the favourite list
+            });
     })
 }
 
-function addEventListeners2() {
-    for (i = 0; i < favouriteIds.length; i++) {
-        document.getElementById(favouriteIds[i] + " Fav")
-            .addEventListener('click', (e) => {
-                setItem(clickMap, e.target.id.slice(0, -4), "buttonGrey");
-                // remove the item from favourites list
-                document.getElementById("favourites").innerHTML = insertFavourites();
-                // turn to grey star in the results list
-                if (relatedObjects.length != 0) {
-                    document.getElementById(e.target.id.slice(0, -4)).outerHTML =
-                        "<span class=\"glyphicon glyphicon-star buttonGrey\""
-                        + " id=\"" + e.target.id.slice(0, -4) + "\"" + " aria-hidden=\"true\"></span>";
-                    //addEventListeners();
-                    addEventListenerToResults(e.target.id.slice(0, -4));
-                }
-                addEventListeners2(); //re-enable the button in the favourite list
-            });
-    }
-}
-
+/** 
+ * Load the JSON file to allObjects array
+ * When finished, initialize the storage, display the fav list
+ * and add button listeners to fav list
+*/
 function loadObjects() {
     $.getJSON('https://secure.toronto.ca/cc_sr_v1/data/swm_waste_wizard_APR?limit=1000', function (data) {
         allObjects = data;
     }).error(function () {
         console.log('error: json not loaded');  // debug
-    })
-        .done(function () {
+    }).done(function () {
             console.log("JSON loaded!");  // debug
             initLocalStorage();
             $(document).ready(function () {
                 document.getElementById("favourites").innerHTML = insertFavourites();
-            });
-            addEventListeners2();
-            //        window.localStorage.clear();
+            }); // render the fav list
+            addEventListenersToFav();
+            //window.localStorage.clear();
         });
 
 }
 
+/** 
+ * Search the ojects based on keywords and title
+*/
 function searchObject(text) {
-    for (i = 0; i < allObjects.length; i++) {
-        if (allObjects[i].title.toLowerCase().includes(text)) {
-            relatedObjects.push(allObjects[i]);
-        } else if (allObjects[i].keywords.toLowerCase().includes(text)) {
-            relatedObjects.push(allObjects[i]);
+    allObjects.forEach((item) => {
+        if (item.title.toLowerCase().includes(text)) {
+            relatedObjects.push(item);
+        } else if (item.keywords.toLowerCase().includes(text)) {
+            relatedObjects.push(item);
         }
-    }
+    })
 }
 
 function insertResults() {
     var res = "";
     for (n = 0; n < relatedObjects.length; n++) {
+        // Here I use the object title as the button's id
         res = res + "<div class=\"column1\">"
             + "<button type=\"button\" class=\"button\">"
             + "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, relatedObjects[n].title)
@@ -142,6 +164,8 @@ function insertFavourites() {
     var res = "";
     for (i = 0; i < window.localStorage.length; i++) {
         if (window.localStorage.getItem(window.localStorage.key(i)) == "buttonGreen") {
+            /* Here add " Fav" at the end of title to distinguish the id for buttons
+            in the results list*/
             res = res + "<div class=\"column1\">"
                 + "<button type=\"button\" class=\"button\">"
                 + "<span class=\"glyphicon glyphicon-star " + "buttonGreen"
