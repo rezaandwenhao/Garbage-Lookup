@@ -5,6 +5,8 @@ var clickMap = new Map();
 var currentTitle = "";
 let searchButton = document.getElementById('searchButton');
 
+loadObjects();  // load data from JSON file
+
 searchButton.addEventListener('click', () => {
     search();
 });
@@ -28,8 +30,6 @@ $('#textField').keyup(function (e) {
     }
 });
 
-loadObjects();
-
 function initLocalStorage() {
     if (typeof (Storage) !== "undefined") {
         // restore the localStorage, if storage is empty, will init new one
@@ -45,6 +45,10 @@ function initLocalStorage() {
     }
 }
 
+/** 
+ * Add an event listener to the button with name id
+ * @param {string} id - the id of the button that is to be added a listener
+*/
 function addEventListenerToId(id) {
     document.getElementById(id)
     .addEventListener('click', (e) => {
@@ -57,38 +61,16 @@ function addEventListenerToId(id) {
     });
 }
 
-function addEventListeners() {
-    for (i = 0; i < relatedObjects.length; i++) {
-        document.getElementById(relatedObjects[i].title)
-            .addEventListener('click', (e) => {
-                setItem(clickMap, e.target.id, "buttonGreen");
-                e.target.outerHTML =
-                    "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, e.target.id)
-                    + "\"" + " id=\"" + e.target.id + "\"" + " aria-hidden=\"true\"></span>";
-                document.getElementById("favourites").innerHTML = insertFavourites();
-                addEventListeners2(); //re-enable the button in the favourite list
-            });
-    }
-}
-
 /** 
  * When remove item A from fav list, 
  * add a listener to the A star that becomes grey if it's in the result list.
  * So it can be clicked again to add to fav list
  * @param {string} id - the id of the button that is to be added a listener
 */
-function addOneEventListener(id) {
+function addEventListenerToResults(id) {
     relatedObjects.forEach((item) => {
         if (item.title === id) {
-            document.getElementById(id)
-                .addEventListener('click', (e) => {
-                    setItem(clickMap, e.target.id, "buttonGreen");
-                    e.target.outerHTML =
-                        "<span class=\"glyphicon glyphicon-star " + getItem(clickMap, e.target.id)
-                        + "\"" + " id=\"" + e.target.id + "\"" + " aria-hidden=\"true\"></span>";
-                    document.getElementById("favourites").innerHTML = insertFavourites();
-                    addEventListeners2(); //re-enable the button in the favourite list
-                });
+            addEventListenerToId(id);
         }
     })
 }
@@ -106,7 +88,7 @@ function addEventListeners2() {
                         "<span class=\"glyphicon glyphicon-star buttonGrey\""
                         + " id=\"" + e.target.id.slice(0, -4) + "\"" + " aria-hidden=\"true\"></span>";
                     //addEventListeners();
-                    addOneEventListener(e.target.id.slice(0, -4));
+                    addEventListenerToResults(e.target.id.slice(0, -4));
                 }
                 addEventListeners2(); //re-enable the button in the favourite list
             });
@@ -193,7 +175,10 @@ function search() {
     }
     searchObject(document.getElementById('textField').value.toLowerCase());
     document.getElementById('resultList').innerHTML = insertResults();
-    addEventListeners();
+    // add event listeners to related results
+    relatedObjects.forEach((item) => {
+        addEventListenerToId(item.title);
+    })
 }
 
 function setItem(map, key, value) {
