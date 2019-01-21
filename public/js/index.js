@@ -112,7 +112,6 @@ function loadObjects() {
                 document.getElementById("favourites").innerHTML = insertFavourites();
             }); // render the fav list
             addEventListenersToFav();
-            //window.localStorage.clear();
         });
 
 }

@@ -94,14 +94,10 @@ header {
 .footer {
     height:25%; 
     width: 100%;
-    background-color: #CFFAEB;
+    background-color: #E8FAED;
     overflow-y: scroll;
     background-position: 0% 0%;
     position: fixed;
     bottom: 0pt;
     left: 0pt;
 }   
-
-.footer_contents {
-    padding-left: 15px;
-}
